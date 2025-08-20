@@ -1,45 +1,41 @@
 package com.myweather.user_service.controller;
 
-import com.myweather.user_service.dto.UserDto;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.myweather.user_service.dto.UpdateUserRequest;
 import com.myweather.user_service.model.User;
 import com.myweather.user_service.service.UserService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("user")
 public class UserController {
-
-	private final UserService userService;
-
-	public UserController(UserService userService) {
-		this.userService = userService;
-	}
-
-	@PostMapping
-	public ResponseEntity<UserDto> register(@RequestBody User user) {
-		User saved = userService.register(user);
-		UserDto dto = toDto(saved);
-		return ResponseEntity.created(URI.create("/api/users/" + saved.getUid())).body(dto);
-	}
-
+	
+	@Autowired
+	private UserService userService;
+	
 	@GetMapping
-	public List<UserDto> list() {
-		return userService.findAll().stream().map(this::toDto).collect(Collectors.toList());
+	public ResponseEntity<User> displayUser(Authentication authentication) {
+		return userService.getUser(authentication.getName());
 	}
-
-	@GetMapping("/{id}")
-	public ResponseEntity<UserDto> getById(@PathVariable("id") Long id) {
-		return userService.findById(id)
-				.map(u -> ResponseEntity.ok(toDto(u)))
-				.orElseGet(() -> ResponseEntity.notFound().build());
+	
+	@PatchMapping
+	public ResponseEntity<User> updateUser(
+			@RequestBody UpdateUserRequest request,
+			Authentication authentication
+		) {
+		return userService.updateUser(authentication.getName(), request);
 	}
-
-	private UserDto toDto(User u) {
-		return new UserDto(u.getUid(), u.getEmail(), u.getAddress(), u.getProfilePicture(), u.getDateOfBirth());
+	
+	@DeleteMapping
+	public ResponseEntity<User> deleteUser(Authentication authentication) {
+		return userService.deleteUser(authentication.getName());
 	}
 }
